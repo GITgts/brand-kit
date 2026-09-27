@@ -1,0 +1,134 @@
+openapi: 3.1.0
+info:
+  title: Wisemen brand-service
+  version: 1.0.0
+  description: |
+    Website → brand colours, logo assessment and uniform square customer icon.
+    Service-to-service only: call it from an app backend, never from a browser.
+    Types for TypeScript consumers: `@wisemen/brand-kit`.
+servers:
+  - url: https://brand.example.internal
+security:
+  - bearer: []
+paths:
+  /v1/brand/extract:
+    post:
+      summary: Analyse a website
+      description: Cached per domain + company name for 24 h unless `force` is true. Takes 5–40 s.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ExtractRequest' }
+      responses:
+        '200':
+          description: Analysis
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/BrandExtractionResult' }
+        '400': { $ref: '#/components/responses/Error' }
+        '401': { $ref: '#/components/responses/Error' }
+        '422': { description: Not a public website, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '429': { $ref: '#/components/responses/Error' }
+        '504': { description: Analysis timed out, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+  /v1/brand/monogram:
+    post:
+      summary: Render the final monogram asset
+      description: Letters as outlines in the brand font; colours adjusted to WCAG AA.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/MonogramRequest' }
+      responses:
+        '200':
+          description: SVG
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MonogramResponse' }
+        '400': { $ref: '#/components/responses/Error' }
+        '401': { $ref: '#/components/responses/Error' }
+  /health:
+    get:
+      security: []
+      summary: Liveness
+      responses:
+        '200': { description: OK }
+components:
+  securitySchemes:
+    bearer: { type: http, scheme: bearer, description: 'Per-app key. `x-api-key` header also accepted.' }
+  responses:
+    Error:
+      description: Error
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+  schemas:
+    Error:
+      type: object
+      properties:
+        statusCode: { type: integer }
+        message: { description: Dutch, user-presentable when a string, oneOf: [{ type: string }, { type: array }] }
+    ExtractRequest:
+      type: object
+      required: [website]
+      properties:
+        website: { type: string, example: brantano.be }
+        companyName: { type: string, example: Brantano }
+        force: { type: boolean, description: Bypass the cache }
+    MonogramRequest:
+      type: object
+      required: [letters, background]
+      properties:
+        letters: { type: string, pattern: '^[\p{L}\p{N}]{1,3}$', example: BR }
+        background: { type: string, pattern: '^#[0-9a-fA-F]{6}$', example: '#C8102E' }
+    MonogramResponse:
+      type: object
+      required: [svg, background, foreground, adjusted]
+      properties:
+        svg: { type: string }
+        background: { type: string }
+        foreground: { type: string }
+        adjusted: { type: boolean, description: Background was darkened for contrast }
+    BrandExtractionResult:
+      type: object
+      required: [domain, finalUrl, companyName, analyzedAt, palette, icon, diagnostics]
+      properties:
+        domain: { type: string }
+        finalUrl: { type: string }
+        companyName: { type: string }
+        analyzedAt: { type: string, format: date-time }
+        palette:
+          type: object
+          properties:
+            primary: { type: [string, 'null'], example: '#C8102E' }
+            accent: { type: [string, 'null'], example: '#1F2937' }
+            swatches:
+              type: array
+              maxItems: 6
+              items: { type: object, properties: { hex: { type: string }, explanation: { type: string } } }
+            primarySurface:
+              type: [object, 'null']
+              properties:
+                hex: { type: string }
+                onColor: { type: string }
+                adjusted: { type: boolean }
+                contrast: { type: number }
+        icon:
+          type: object
+          properties:
+            recommendation: { type: string, enum: [monogram, logo] }
+            reason: { type: string, description: One Dutch sentence for the UI }
+            monogram:
+              type: object
+              properties:
+                letters: { type: string }
+                svg: { type: string }
+                background: { type: string }
+                foreground: { type: string }
+            logoSquarePng: { type: [string, 'null'], description: 512×512 PNG data URL }
+            logoPng: { type: [string, 'null'], description: Trimmed original logo, PNG data URL }
+            logoSourceUrl: { type: [string, 'null'] }
+        diagnostics:
+          type: object
+          description: For debugging and tuning. `warnings` values - no-brand-color, no-logo-candidates, fallback-without-browser, "render-failed - …". Ignore unknown values.

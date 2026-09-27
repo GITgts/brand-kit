@@ -1,0 +1,21 @@
+{
+  "name": "vue-merk-step-example",
+  "private": true,
+  "description": "Reference implementation of a brand step in Vue 3. Copy and adapt; not published.",
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "vue-tsc --noEmit -p ."
+  },
+  "dependencies": {
+    "@wisemen/brand-kit": "workspace:^",
+    "vue": "^3.5.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^5.0.0",
+    "@vue/test-utils": "^2.4.0",
+    "jsdom": "^25.0.0",
+    "typescript": "^5.6.0",
+    "vitest": "^2.1.0",
+    "vue-tsc": "^2.1.0"
+  }
+}
