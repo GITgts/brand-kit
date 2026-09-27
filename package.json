@@ -7,7 +7,8 @@
     "test": "pnpm build && pnpm -r test",
     "typecheck": "pnpm build && pnpm -r typecheck",
     "changeset": "changeset",
-    "release": "pnpm build && changeset publish"
+    "release": "pnpm build && changeset publish",
+    "pack:kit": "pnpm --filter @wisemen/brand-kit build && cd packages/brand-kit && pnpm pack --pack-destination ../../packs"
   },
   "devDependencies": {
     "@changesets/cli": "^2.27.0",

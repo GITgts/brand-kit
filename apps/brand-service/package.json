@@ -4,8 +4,8 @@
   "version": "0.1.0",
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
-    "start": "node dist/main.js",
-    "dev": "tsx watch src/main.ts",
+    "start": "node --env-file-if-exists=.env dist/main.js",
+    "dev": "tsx watch --env-file=.env src/main.ts",
     "test": "tsx --test test/*.test.ts",
     "typecheck": "tsc --noEmit -p ."
   },
